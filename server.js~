@@ -1,0 +1,85 @@
+require('dotenv').config(); // โหลดค่าจาก .env
+const express = require('express');
+const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
+const authRoutes = require('./routes/auth');
+const foodRecordRoutes = require('./routes/foodRecord');
+const session = require('express-session');
+
+require('crypto').randomBytes(64).toString('hex');
+
+
+const app = express();
+app.use(bodyParser.json());
+
+const cors = require('cors');
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+}))
+
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url} - ${JSON.stringify(req.body)}`);
+    next(); // ดำเนินการต่อไปยัง Middleware หรือ Route ถัดไป
+});
+
+const SECRET_KEY = process.env.SECRET_KEY; // ดึงค่า SECRET_KEY
+
+// Middleware สำหรับตรวจสอบ JWT
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized: Invalid token format' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: 'Unauthorized: Invalid token' });
+  }
+};
+
+
+app.get('/protected', authMiddleware, (req, res) => {
+  res.json({
+    message: 'Protected data',
+    user: req.user,
+  });
+});
+
+app.use('/food-records', foodRecordRoutes);
+
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: true,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 3600000 // 1 hour
+  }
+}));
+
+// Improved logging
+// const morgan = require('morgan');
+// app.use(morgan('combined'));
+
+const isAuthenticated = (req, res, next) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: 'Unauthorized: Please log in.' });
+  }
+  next();
+};
+
+// ใช้เส้นทางสำหรับ Auth
+app.use('/auth', authRoutes);
+
+app.use('/api', authRoutes);
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});

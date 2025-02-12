@@ -141,8 +141,6 @@ router.post('/add_food', async (req, res) => {
 });
 
 
-
-
 router.get('/by-date/:date', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -233,7 +231,42 @@ router.get('/weekly-summary', authMiddleware, async (req, res) => {
   }
 });
 
+router.put('/update/:id', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { id } = req.params;
+    const { name, time, date, calories } = req.body;
 
+    if (!name || !time || !date || isNaN(calories)) {
+      return res.status(400).json({ message: 'Invalid input data.' });
+    }
+
+    const record = await prisma.foodRecord.findUnique({ where: { id: parseInt(id) } });
+
+    if (!record || record.userId !== userId) {
+      return res.status(404).json({ error: 'Food record not found or unauthorized' });
+    }
+
+    const [hour, minute, period] = time.split(/[: ]/); // แยกชั่วโมง, นาที, AM/PM
+    const hour24 = period === 'PM' && hour !== '12' ? parseInt(hour) + 12 : (period === 'AM' && hour === '12' ? 0 : parseInt(hour));
+    const formattedTime = `${date}T${hour24.toString().padStart(2, '0')}:${minute}:00`;
+
+    const updatedRecord = await prisma.foodRecord.update({
+      where: { id: parseInt(id) },
+      data: {
+        name: name.trim(),
+        time: new Date(formattedTime), 
+        date: new Date(date),
+        calories: parseInt(calories),
+      },
+    });
+
+    res.status(200).json({ message: 'Food record updated successfully', record: updatedRecord });
+  } catch (error) {
+    console.error('Error updating food record:', error);
+    res.status(500).json({ error: 'Failed to update food record' });
+  }
+});
 
 
 module.exports = router;

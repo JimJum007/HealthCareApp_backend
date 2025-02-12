@@ -59,6 +59,9 @@ app.use('/food-records', foodRecordRoutes);
 
 app.use('/auth', authRoutes);
 
+const activityRoutes = require('./routes/activityRoutes');
+app.use('/activity', activityRoutes);
+
 
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Route not found' });
@@ -75,3 +78,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+

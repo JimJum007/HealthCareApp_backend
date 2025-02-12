@@ -1,36 +1,46 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+  // This is your Prisma schema file,
+  // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+  // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+  // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
-generator client {
-  provider = "prisma-client-js"
-}
+  generator client {
+    provider = "prisma-client-js"
+  }
 
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-}
+  datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+  }
 
-model User {
-  id          Int           @id @default(autoincrement())
-  name        String
-  email       String        @unique
-  password    String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  foodRecords FoodRecord[]  // ฟิลด์สำหรับความสัมพันธ์กลับ
-}
+  model User {
+    id          Int          @id @default(autoincrement())
+    name        String
+    email       String       @unique
+    password    String
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
+    foodRecords FoodRecord[]
+    activities  Activity[]
+  }
 
-model FoodRecord {
-  id        Int      @id @default(autoincrement()) // ไอดีสำหรับบันทึกแต่ละรายการ
-  userId    Int      // เชื่อมกับผู้ใช้ (foreign key)
-  user      User     @relation(fields: [userId], references: [id])
-  name      String   // ชื่ออาหาร
-  time      DateTime // เวลาที่บริโภค
-  date      DateTime
-  calories  Int      // จำนวนแคลอรี
-  createdAt DateTime @default(now()) // เวลาที่บันทึกข้อมูล
-}
+  model FoodRecord {
+    id        Int      @id @default(autoincrement())
+    userId    Int 
+    user      User     @relation(fields: [userId], references: [id])
+    name      String
+    time      DateTime
+    date      DateTime
+    calories  Int
+    createdAt DateTime @default(now())
+  }
 
+  model Activity {
+    id        Int      @id @default(autoincrement())
+    userId    Int
+    name      String
+    startTime DateTime
+    endTime   DateTime
+    date      DateTime
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  }
